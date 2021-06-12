@@ -39,8 +39,8 @@
 ## Soal 4
 Untuk memudahkan dalam memonitor kegiatan pada filesystem mereka Sin dan Sei membuat sebuah log system dengan spesifikasi sebagai berikut.
 - Log system yang akan terbentuk bernama `SinSeiFS.log` pada direktori home pengguna `/home/[user]/SinSeiFS.log)`. Log system ini akan menyimpan daftar perintah system call yang telah dijalankan pada filesystem.
-- Karena Sin dan Sei suka kerapian maka log yang dibuat akan dibagi menjadi dua level, yaitu INFO dan WARNING.
-- Untuk log level WARNING, digunakan untuk mencatat syscall rmdir dan unlink.
+- log yang dibuat akan dibagi menjadi dua level, yaitu INFO dan WARNING.
+- Untuk log level WARNING, digunakan untuk mencatat syscall `rmdir` dan `unlink`.
 - Sisanya, akan dicatat pada level INFO.
 - Format untuk logging yaitu:
 `[Level]::[dd][mm][yyyy]-[HH]:[MM]:[SS]:[CMD]::[DESC :: DESC]`
