@@ -5,13 +5,9 @@
 - M. Iqbal Abdi (05111940000151)
 
 ## Soal 1
-- Jika sebuah direktori dibuat dengan awalan “AtoZ_”, maka direktori tersebut akan menjadi direktori ter-encode.
-- Jika sebuah direktori di-rename dengan awalan “AtoZ_”, maka direktori tersebut akan menjadi direktori ter-encode.
-- Apabila direktori yang terenkripsi di-rename menjadi tidak ter-encode, maka isi direktori tersebut akan terdecode.
-- Setiap pembuatan direktori ter-encode (mkdir atau rename) akan tercatat ke sebuah log. Format : /home/[USER]/Downloads/[Nama Direktori] → /home/[USER]/Downloads/AtoZ_[Nama Direktori]
-- Nama isi direktori berawalan "AtoZ_" di-encode menggunakan Atbash Cipher, yaitu sistem pengkodean mencerminkan alfabet sesuai urutan (A menjadi Z, B menjadi Y, C menjadi X, dan seterusnya, berlaku sebaliknya.
 ### Poin (a)
-- Untuk men-encode seluruh folder dan subfolder beserta file yang berada didalam folder "AtoZ_[Nama]" dengan algoritma atbash cipher, maka akan dibuat fungsi `atbash()`. Referensi tentang atbash cipher dapat dibaca disini `https://www.dcode.fr/atbash-cipher`
+Jika sebuah direktori dibuat dengan awalan “AtoZ_”, maka direktori tersebut akan menjadi direktori ter-encode.
+- Untuk men-encode seluruh folder dan subfolder beserta file yang berada di dalam folder "AtoZ_[Nama]" dengan algoritma atbash cipher, maka akan dibuat fungsi `atbash()`. Atbash Cipher mencerminkan alfabet sesuai urutan (A menjadi Z, B menjadi Y, C menjadi X, dst., dan berlaku sebaliknya sehingga fungsi encode dan decode sama. Referensi tentang Atbash cipher dapat dibaca di `https://www.dcode.fr/atbash-cipher`.
 ```c
 void atbash(char *str) {
     for (int i = 0; i < strlen(str); i++) {
@@ -22,7 +18,7 @@ void atbash(char *str) {
     }
 }
 ```
-- Lalu, saat melakukan encoding, akan terjadi perbedaan nama folder dan file antara mount dan FUSE sehingga file menjadi tidak terdeteksi. Maka akan dibuat fungsi `get_original_directory()` dan `get_new_directory()` untuk menjaga agar direktori pada FUSE tetap sama dengan direktori mount nya.
+- Lalu, saat melakukan encoding, akan terjadi perbedaan nama folder dan file antara mount dan FUSE sehingga file menjadi tidak terdeteksi. Maka akan dibuat fungsi `get_original_directory()` dan `get_new_directory()` untuk menjaga agar direktori pada FUSE tetap sama dengan direktori mount-nya.
 ```c
 void get_original_directory(char *input, char *output) {
     char fpath[1024];
@@ -248,11 +244,12 @@ void get_new_directory(char *input, char *output) {
     }
 }
 ```
-`Fungi get_original_directory()` akan menngecek apakah awal direktori memiliki awalan kata `AtoZ_` atau `RX_`. Jika awalannya *AtoZ_* maka akan dilakukan decrypting dengan metode *Atbash Cipher*, jika awalnnya *RX_* akan menggunakan *Atbash Ciper* ditambah metode *ROT13* yang akan digunakan untuk soal no 2.
+Fungsi `get_original_directory()` akan mengecek apakah awal direktori memiliki awalan kata `AtoZ_` atau `RX_` dan mendapatkan direktori asli pada direktori mount dari direktori yang sedang diakses. Jika awalannya *AtoZ_* maka akan dilakukan dekripsi dengan metode *Atbash Cipher*, jika awalannya *RX_* akan menggunakan *Atbash Ciper* ditambah metode *ROT13* yang akan digunakan untuk soal nomor 2.
 
 ### Poin (b)
-- Poin ini sama saja dengan poin (a), hanya saja direktori yang akan di encode bukan hasil dari create, melainkan hasil dari rename.
-- Direktori yang di-rename dengan awalan `AtoZ` akan di encode menggunakan metode *Atbash Cipher*.
+Jika sebuah direktori di-rename dengan awalan “AtoZ_”, maka direktori tersebut akan menjadi direktori ter-encode.
+- Poin ini sama saja dengan poin (a), hanya saja direktori yang akan di-encode bukan hasil dari create, melainkan hasil dari rename.
+- Direktori yang di-rename dengan awalan `AtoZ` akan di-encode menggunakan metode *Atbash Cipher*.
 ```c
 static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                        off_t offset, struct fuse_file_info *fi)
@@ -299,66 +296,7 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                 printf("12.1 file name AtoZ: %s\n", fileName);
             }
         }
-        else if (strstr(path, "/RX_") && strcmp(".", fileName) && strcmp("..", fileName)) {
-            printf("13 read file path RX: %s\n", path);
-            if (in(renamed_count, cekrename)) {
-                if (!strstr(fileName, ".")) {
-                    char old_name[100], encrypted[100];
-                    bzero(old_name, sizeof(old_name));
-                    strcpy(old_name, fileName);
-                    atbash(old_name);
-
-                    bzero(encrypted, sizeof(encrypted));
-                    vigenere_encrypt(old_name, encrypted);
-                    bzero(fileName, sizeof(fileName));
-                    strcpy(fileName, encrypted);
-                    printf("13.1 file name RX: %s\n", fileName);
-                }
-                else {
-                    char ext[1024], arr[100][1024], new_name[1024];
-                    strcpy(ext, strstr(fileName, "."));
-                    char *get_dot = strtok(fileName, ".");
-                    int n = 0;
-                    while (get_dot ) {
-                        strcpy(arr[n++], get_dot);
-                        get_dot = strtok(NULL, ".");
-                    }
-                    strcpy(new_name, arr[n - 2]);
-                    atbash(new_name);
-
-                    char encrypted[100];
-                    bzero(encrypted, sizeof(encrypted));
-                    vigenere_encrypt(new_name, encrypted);
-                    bzero(fileName, sizeof(fileName));
-                    sprintf(fileName, "%s.%s", encrypted, arr[n - 1]);
-                    printf("13.2 file name RX: %s\n", fileName);
-                }
-            }
-            else {
-                printf("14 file name: %s\n", fileName);
-                if (!strstr(fileName, ".")) {
-                    atbash(fileName);
-                    rot13(fileName);
-                    printf("14.1 file name: %s\n", fileName);
-                }
-                else {
-                    char ext[1024], arr[100][1024], new_name[1024];
-                    strcpy(ext, strstr(fileName, "."));
-                    char *get_dot = strtok(fileName, ".");
-                    int n = 0;
-                    while (get_dot ) {
-                        strcpy(arr[n++], get_dot);
-                        get_dot = strtok(NULL, ".");
-                    }
-                    strcpy(new_name, arr[n - 2]);
-                    atbash(new_name);
-                    rot13(new_name);
-
-                    bzero(fileName, sizeof(fileName));
-                    sprintf(fileName, "%s.%s", new_name, arr[n - 1]);
-                    printf("14.2 file name: %s\n", fileName);
-                }
-            }
+        ...
         }
         res = (filler(buf, fileName, &st, 0));
         if (res) break;
@@ -368,10 +306,10 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     return 0;
 }
 ```
-Pada fungsi `xmp_readdir()`, akan dicek apakah proses yang dilakukan adalah *create* atau *rename*. Lalu string yang bakal di-encode hanyalah nama file pada subfolder nya saja, tidak sampai ke ekstensi nya.
+Pada fungsi `xmp_readdir()`, akan dicek apakah proses yang dilakukan adalah *create* atau *rename*. Lalu string yang bakal di-encode hanyalah nama file pada subfoldernya saja, tidak sampai ke ekstensi nya.
 
 ### Poin (c)
--
+Apabila direktori yang terenkripsi di-rename menjadi tidak ter-encode, maka isi direktori tersebut akan terdecode.
 
 ### Poin (d)
 Setiap pembuatan direktori ter-encode (mkdir atau rename) akan tercatat ke sebuah log. Format : /home/[USER]/Downloads/[Nama Direktori] → /home/[USER]/Downloads/AtoZ_[Nama Direktori]
