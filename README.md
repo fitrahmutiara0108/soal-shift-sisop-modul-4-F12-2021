@@ -429,6 +429,10 @@ static int xmp_rename(const char *from, const char *to, unsigned int flags){
 }
 
 ```
+#### Dokumentasi
+![image](https://user-images.githubusercontent.com/70105993/121810067-e9d05180-cc91-11eb-8f35-475f1475958a.png)
+
+
 ### Poin (e)
 - Proses encode-decode ini sudah dilakukan dengan metode recursive sampai ke subfolder didalam direktori nya
 
