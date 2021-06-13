@@ -394,6 +394,65 @@ Pada fungsi `xmp_readdir()`, akan dicek apakah proses yang dilakukan adalah *cre
 
 ### Poin (c)
 Apabila direktori yang terenkripsi di-rename menjadi tidak ter-encode, maka isi direktori tersebut akan terdecode.
+- Pada blok kode di bawah, program akan menentukan apakah nama direktori diawali dengan 'AtoZ_'. Jika ya, maka nama isi direktori akan di-encode dengan Atbash, dan jika tidak, maka ditampilkan sesuai nama pada direktori mount, tanpa encoding apapun.
+```c
+static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+                       off_t offset, struct fuse_file_info *fi)
+{
+    int res;
+    DIR *dp;
+    struct dirent *dPtr;
+
+    (void)offset;
+    (void)fi;
+    char fpath[2000], name[2000], cekrename[128];
+    sprintf(fpath, "%s%s", dirpath, path);
+
+    ...
+
+    dp = opendir(fpath);
+    if (!dp) return -errno;
+
+    while ((dPtr = readdir(dp)) ) {
+        struct stat st;
+        memset(&st, 0, sizeof(st));
+        st.st_ino = dPtr->d_ino;
+        st.st_mode = dPtr->d_type << 12;
+
+        char fileName[2000];
+        strcpy(fileName, dPtr->d_name);
+
+        if (strstr(path, "/AtoZ_")  && strcmp(".", fileName)  && strcmp("..", fileName) ) {
+            printf("12 read file path AtoZ: %s\n", path);
+            if (!strstr(fileName, "."))  atbash(fileName);
+            else {
+                char ext[1024], arr[100][1024], new_name[1024];
+                strcpy(ext, strstr(fileName, "."));
+                char *get_dot = strtok(fileName, ".");
+                int n = 0;
+                while (get_dot ) {
+                    strcpy(arr[n++], get_dot);
+                    get_dot = strtok(NULL, ".");
+                }
+                strcpy(new_name, arr[n - 2]);
+                atbash(new_name);
+                bzero(fileName, sizeof(fileName));
+                sprintf(fileName, "%s.%s", new_name, arr[n - 1]);
+                printf("12.1 file name AtoZ: %s\n", fileName);
+            }
+        }
+        ...
+        res = (filler(buf, fileName, &st, 0));
+        if (res) break;
+    }
+    write_info("CD", path);
+    closedir(dp);
+    return 0;
+}
+
+```
+
+#### Dokumentasi
 ![image](https://user-images.githubusercontent.com/70105993/121811535-4da94900-cc97-11eb-8afc-47d41d5d5f7b.png)
 
 
@@ -458,7 +517,8 @@ static int xmp_rename(const char *from, const char *to, unsigned int flags){
 
 
 ### Poin (e)
-- Proses encode-decode ini sudah dilakukan dengan metode recursive sampai ke subfolder di dalam direktorinya.
+Metode encode pada suatu direktori juga berlaku terhadap direktori yang ada di dalamnya.(rekursif)
+- Proses encode-decode ini sudah dilakukan dengan metode recursive sampai ke subfolder di dalam direktorinya. Setiap membuka direktori yang diawali "AtoZ", nama file dan folder akan otomatis dienkripsi dengan Atbash cipher.
 #### Dokumentasi
 ![image](https://user-images.githubusercontent.com/70105993/121810159-459ada80-cc92-11eb-8d69-15db6aa21d08.png)
 
