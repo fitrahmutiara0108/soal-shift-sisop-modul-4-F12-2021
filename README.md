@@ -596,7 +596,7 @@ void vigenere_decrypt(char *input, char *output) {
 }
 ```
 #### Dokumentasi
-![image](https://user-images.githubusercontent.com/70105993/121808900-3b2a1200-cc8d-11eb-9e67-182754aa7c5c.png)
+![image](https://user-images.githubusercontent.com/70105993/121809609-09ff1100-cc90-11eb-8472-a038dfc0e6b4.png)
 
 ### Poin (c)
 Apabila direktori yang terencode di-rename (Dihilangkan “RX_” nya), maka folder menjadi tidak terencode dan isi direktori tersebut akan terdecode berdasar nama aslinya.
@@ -699,7 +699,7 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 }
 ```
 #### Dokumentasi
-![image](https://user-images.githubusercontent.com/70105993/121809188-6a8d4e80-cc8e-11eb-8fff-3c1c92021c2a.png)
+![image](https://user-images.githubusercontent.com/70105993/121809561-dcb26300-cc8f-11eb-9f9c-83add32d150f.png)
 
 ### Poin (d)
 Setiap pembuatan direktori terencode (mkdir atau rename) akan tercatat ke sebuah log file beserta methodnya (apakah itu mkdir atau rename).
@@ -760,7 +760,7 @@ Belum dikerjakan
 ### Kendala dan error selama pengerjaan
 - Rename folder dengan awalan 'RX_' melalui FUSE kemudian membuka folder yang direname tersebut menyebabkan FUSE crash, sedangkan jika FUSE di-restart, isi folder dengan awalan nama 'RX_' tetap terenkripsi dan bisa dibuka
 
-![image](https://user-images.githubusercontent.com/70105993/121809189-6cefa880-cc8e-11eb-9405-da9ce4bfcbb2.png)
+![image](https://user-images.githubusercontent.com/70105993/121809620-13887900-cc90-11eb-93ec-61c073b50c73.png)
 
 - Enkripsi menghasilkan karakter non-alfabetik
 
