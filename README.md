@@ -394,6 +394,8 @@ Pada fungsi `xmp_readdir()`, akan dicek apakah proses yang dilakukan adalah *cre
 
 ### Poin (c)
 Apabila direktori yang terenkripsi di-rename menjadi tidak ter-encode, maka isi direktori tersebut akan terdecode.
+![image](https://user-images.githubusercontent.com/70105993/121811535-4da94900-cc97-11eb-8afc-47d41d5d5f7b.png)
+
 
 ### Poin (d)
 Setiap pembuatan direktori ter-encode (mkdir atau rename) akan tercatat ke sebuah log. Format : /home/[USER]/Downloads/[Nama Direktori] → /home/[USER]/Downloads/AtoZ_[Nama Direktori]
