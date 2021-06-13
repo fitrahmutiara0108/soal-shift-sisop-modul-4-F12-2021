@@ -8,8 +8,7 @@
 - Jika sebuah direktori dibuat dengan awalan “AtoZ_”, maka direktori tersebut akan menjadi direktori ter-encode.
 - Jika sebuah direktori di-rename dengan awalan “AtoZ_”, maka direktori tersebut akan menjadi direktori ter-encode.
 - Apabila direktori yang terenkripsi di-rename menjadi tidak ter-encode, maka isi direktori tersebut akan terdecode.
-- Setiap pembuatan direktori ter-encode (mkdir atau rename) akan tercatat ke sebuah log. Format : /home/[USER]/Downloads/[Nama Direktori] → /home/[USER]/Downloads/AtoZ_[Nama Direktori]
-- Nama isi direktori berawalan "AtoZ_" di-encode menggunakan Atbash Cipher, yaitu sistem pengkodean mencerminkan alfabet sesuai urutan (A menjadi Z, B menjadi Y, C menjadi X, dan seterusnya, berlaku sebaliknya).
+- Nama isi direktori berawalan "AtoZ_" di-encode menggunakan Atbash Cipher, yaitu sistem pengkodean mencerminkan alfabet sesuai urutan, contohnya A menjadi Z, B menjadi Y, C menjadi X dst., serta berlaku sebaliknya sehingga fungsi encode dan decode sama.
 ```c
 void atbash(char *str) {
     for (int i = 0; i < strlen(str); i++) {
@@ -245,17 +244,503 @@ void get_new_directory(char *input, char *output) {
 }
 ```
 
-## Soal 2
-- Jika sebuah direktori dibuat dengan awalan “RX_[Nama]”, maka direktori tersebut akan menjadi direktori terencode beserta isinya dengan perubahan nama isi sesuai kasus nomor 1 dengan algoritma tambahan ROT13 (Atbash + ROT13).
-- Jika sebuah direktori di-rename dengan awalan “RX_[Nama]”, maka direktori tersebut akan menjadi direktori terencode beserta isinya dengan perubahan nama isi sesuai dengan kasus nomor 1 dengan algoritma tambahan Vigenere Cipher dengan key “SISOP” (Case-sensitive, Atbash + Vigenere).
-- Apabila direktori yang terencode di-rename (Dihilangkan “RX_” nya), maka folder menjadi tidak terencode dan isi direktori tersebut akan terdecode berdasar nama aslinya.
-- Setiap pembuatan direktori terencode (mkdir atau rename) akan tercatat ke sebuah log file beserta methodnya (apakah itu mkdir atau rename).
-- Pada metode enkripsi ini, file-file pada direktori asli akan menjadi terpecah menjadi file-file kecil sebesar 1024 bytes, sementara jika diakses melalui filesystem rancangan Sin dan Sei akan menjadi normal. Sebagai contoh, Suatu_File.txt berukuran 3 kiloBytes pada directory asli akan menjadi 3 file kecil yakni:
-`Suatu_File.txt.0000`
-`Suatu_File.txt.0001`
-`Suatu_File.txt.0002`
+### Poin (d)
+Setiap pembuatan direktori ter-encode (mkdir atau rename) akan tercatat ke sebuah log. Format : /home/[USER]/Downloads/[Nama Direktori] → /home/[USER]/Downloads/AtoZ_[Nama Direktori]
+- Fungsi `open_log()` akan dijalankan pada saat program fuse dimulai untuk menghasilkan file fuse.log untuk mencatat operasi mkdir atau rename, dan berlokasi di home.
+```c
+void open_log() {
+    if(access("/home/farhan/fuse.log", F_OK)) {
+		FILE *fp = fopen("/home/farhan/fuse.log", "w+");
+		fclose(fp);
+	} 
+}
+...
+int main(int argc, char *argv[]) {
+    open_log();
+    umask(0);
+    renamed_count = 0;
+    return fuse_main(argc, argv, &xmp_oper, NULL);
+}
+```
+- Ketika mkdir atau rename berhasil dijalankan, dengan syarat perubahan nama dilakukan dari folder yang tidak terenkripsi menjadi folder terenkripsi (nama diawali 'AtoZ_' dan tidak berlaku sebaliknya, karena yang diminta adalah pembuatan folder terenkripsi), append akan dilakukan pada file fuse.log yang telah dibuat.
+```c
+static int xmp_mkdir(const char *path, mode_t mode) {
+    ...
+
+    int res = mkdir(fpath, mode);
+    if (res == -1) return -errno;
+    else {
+        if(strstr(path, "AtoZ_")) {
+            FILE *log = fopen("/home/farhan/fuse.log", "a");
+            fprintf(log, "MKDIR: %s%s\n", dirpath, path);
+            fclose(log);
+        }
+        ...
+    }
+
+    return 0;
+}
+
+...
+
+static int xmp_rename(const char *from, const char *to, unsigned int flags){
+    ...
+
+    int res = rename(source, dest);
+    if (res == -1) return -errno;
+    else{
+        ...
+        if(strstr(to, "AtoZ_") || strstr(to, "RX_")) {
+            FILE *log = fopen("/home/farhan/fuse.log", "a");
+            fprintf(log, "RENAME: %s -> %s\n", source, dest);
+            fclose(log);
+        }
+    }
+    return 0;
+}
+
 ```
 
+## Soal 2
+### Poin (a)
+Jika sebuah direktori dibuat dengan awalan “RX_[Nama]”, maka direktori tersebut akan menjadi direktori terencode beserta isinya dengan perubahan nama isi sesuai kasus nomor 1 dengan algoritma tambahan ROT13 (Atbash + ROT13).
+- Program akan mengecek apakah direktori berawalan "RX_". Jika direktori adalah folder maka namanya akan di-encode seluruhnya, sedangkan jika direktori adalah file maka akan diambil terlebih dahulu nama file sebelum '.' terakhir (menandakan selanjutnya adalah ekstensi) untuk kemudian di-encode. 
+```c
+static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+                       off_t offset, struct fuse_file_info *fi)
+{
+    int res;
+    DIR *dp;
+    struct dirent *dPtr;
+
+    (void)offset;
+    (void)fi;
+    char fpath[2000], name[2000], cekrename[128];
+    sprintf(fpath, "%s%s", dirpath, path);
+
+    ...
+
+    dp = opendir(fpath);
+    if (!dp) return -errno;
+
+    while ((dPtr = readdir(dp)) ) {
+        struct stat st;
+        memset(&st, 0, sizeof(st));
+        st.st_ino = dPtr->d_ino;
+        st.st_mode = dPtr->d_type << 12;
+
+        char fileName[2000];
+        strcpy(fileName, dPtr->d_name);
+
+        ...
+        else if (strstr(path, "/RX_") && strcmp(".", fileName) && strcmp("..", fileName)) {
+            printf("13 read file path RX: %s\n", path);
+            if (in(renamed_count, cekrename)) {
+                ...
+            }
+            else {
+                printf("14 file name: %s\n", fileName);
+                if (!strstr(fileName, ".")) {
+                    atbash(fileName);
+                    rot13(fileName);
+                    printf("14.1 file name: %s\n", fileName);
+                }
+                else {
+                    char ext[1024], arr[100][1024], new_name[1024];
+                    strcpy(ext, strstr(fileName, "."));
+                    char *get_dot = strtok(fileName, ".");
+                    int n = 0;
+                    while (get_dot ) {
+                        strcpy(arr[n++], get_dot);
+                        get_dot = strtok(NULL, ".");
+                    }
+                    strcpy(new_name, arr[n - 2]);
+                    atbash(new_name);
+                    rot13(new_name);
+
+                    bzero(fileName, sizeof(fileName));
+                    sprintf(fileName, "%s.%s", new_name, arr[n - 1]);
+                    printf("14.2 file name: %s\n", fileName);
+                }
+            }
+        }
+        res = (filler(buf, fileName, &st, 0));
+        if (res) break;
+    }
+    write_info("CD", path);
+    closedir(dp);
+    return 0;
+}
+```
+
+- Isi direktori di-encode dengan Atbash cipher (sudah dijelaskan di atas) + ROT13. Sama seperti Atbash cipher, ROT13 juga berlaku dua arah sehingga fungsi encode dan decode bisa dijadikan satu.
+```c
+void rot13(char *str) {
+    for (int i = 0; i < strlen(str); i++) { 
+        if (str[i] >= 'A' && str[i] <= 'Z') {
+        	if(str[i]-'A'+1 <= 13) str[i] += 13;
+            else str[i] -= 13;
+        }
+        else if (str[i] >= 'a' && str[i] <= 'z') {
+            if(str[i]-'a'+1 <= 13) str[i] += 13;
+            else str[i] -= 13;
+        }
+        else if (str[i] == 46) break;
+        else continue;
+    }
+}
+```
+
+### Poin (b) **(masih belum berfungsi)**
+Jika sebuah direktori di-rename dengan awalan “RX_[Nama]”, maka direktori tersebut akan menjadi direktori terencode beserta isinya dengan perubahan nama isi sesuai dengan kasus nomor 1 dengan algoritma tambahan Vigenere Cipher dengan key “SISOP” (Case-sensitive, Atbash + Vigenere).
+- Program menyimpan riwayat direktori yang pernah di-rename dalam array `renamed_dir` dan jumlahnya dalam variabel `renamed_count`. Ketika rename dilakukan, direktori disimpan dan jumlahnya ditambah.
+```c
+char renamed_dir[100][1024];
+int renamed_count;
+...
+static int xmp_rename(const char *from, const char *to, unsigned int flags){
+
+    char source[1000];
+    sprintf(source, "%s%s", dirpath, from);
+    if (access(source, F_OK) == -1) {
+        memset(source, 0, sizeof(source));
+        get_original_directory(from, source);
+    }
+
+    char dest[1000];
+    sprintf(dest, "%s%s", dirpath, to);
+    if (access(dest, F_OK) == -1) {
+        memset(dest, 0, sizeof(dest));
+        get_new_directory(to, dest);
+    }
+
+    int res = rename(source, dest);
+    if (res == -1) return -errno;
+    else{
+        ...
+        strcpy(renamed_dir[renamed_count++], source);
+        strcpy(renamed_dir[renamed_count++], dest);
+        ...
+    }
+    return 0;
+}
+```
+- Fungsi `in()` akan mengecek apakah direktori yang akan diakses pernah direname atau tidak. Jika ya, maka akan mengembalikan nilai 1, dan jika tidak maka 0.
+```c
+int in(int len, char *target){
+    for (int i = 0; i < len; i++) {
+        if (strncmp(renamed_dir[i], target, strlen(target)) == 0) 
+            return 1;
+    }
+    return 0;
+}
+```
+- Pada saat direktori dibuka, fungsi `in()` dipanggil dan jika nilai yang dikembalikan adalah 1 (menandakan direktori sudah direname), maka nama isi direktori akan di-encode dengan Atbash cipher dan Vigenere cipher.
+```c
+static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+                       off_t offset, struct fuse_file_info *fi)
+{
+    
+    int res;
+    DIR *dp;
+    struct dirent *dPtr;
+
+    (void)offset;
+    (void)fi;
+    char fpath[2000], name[2000], cekrename[128];
+    sprintf(fpath, "%s%s", dirpath, path);
+
+    ...
+
+    dp = opendir(fpath);
+    if (!dp) return -errno;
+
+    while ((dPtr = readdir(dp)) ) {
+        struct stat st;
+        memset(&st, 0, sizeof(st));
+        st.st_ino = dPtr->d_ino;
+        st.st_mode = dPtr->d_type << 12;
+
+        char fileName[2000];
+        strcpy(fileName, dPtr->d_name);
+
+        ...
+
+        else if (strstr(path, "/RX_") && strcmp(".", fileName) && strcmp("..", fileName)) {
+            printf("13 read file path RX: %s\n", path);
+            if (in(renamed_count, cekrename)) {
+                if (!strstr(fileName, ".")) {
+                    char old_name[100], encrypted[100];
+                    bzero(old_name, sizeof(old_name));
+                    strcpy(old_name, fileName);
+                    atbash(old_name);
+                    
+                    bzero(encrypted, sizeof(encrypted));
+                    vigenere_encrypt(old_name, encrypted);
+                    bzero(fileName, sizeof(fileName));
+                    strcpy(fileName, encrypted);
+                    printf("13.1 file name RX: %s\n", fileName);
+                }
+                else {
+                    char ext[1024], arr[100][1024], new_name[1024];
+                    strcpy(ext, strstr(fileName, "."));
+                    char *get_dot = strtok(fileName, ".");
+                    int n = 0;
+                    while (get_dot ) {
+                        strcpy(arr[n++], get_dot);
+                        get_dot = strtok(NULL, ".");
+                    }
+                    strcpy(new_name, arr[n - 2]);
+                    atbash(new_name);
+
+                    char encrypted[100];
+                    bzero(encrypted, sizeof(encrypted));
+                    vigenere_encrypt(new_name, encrypted);
+                    bzero(fileName, sizeof(fileName));
+                    sprintf(fileName, "%s.%s", encrypted, arr[n - 1]);
+                    printf("13.2 file name RX: %s\n", fileName);
+                }
+            }
+            ...
+        }
+        res = (filler(buf, fileName, &st, 0));
+        if (res) break;
+    }
+    write_info("CD", path);
+    closedir(dp);
+    return 0;
+}
+```
+- Vigenere cipher sendiri meng-encode tiap huruf nama direktori yang dipetakan menuju key "SISOP" yang diulang-ulang sebanyak banyak huruf pada nama direktori (tidak termasuk spasi dan case-sensitive), kemudian huruf digeser dengan ketentuan "A = huruf pada key yang dipetakan pada huruf yang akan di-encode". Vigenere cipher tidak berlaku dua arah sehingga fungsi encode dan decode harus dibuat terpisah.
+```c
+void vigenere_encrypt(char *input, char *output) {
+    char key[] = "SISOP";
+	char buf[100], new_key[strlen(input)], result[strlen(input)];
+    int i, j, k = 0;
+    strcpy(buf, input);
+
+    for (i=0, j=0; i < strlen(input); ++i, ++j) {
+        if (buf[i] == 32) {
+        	j--;
+			continue;
+		}
+        if (j == (strlen(key))) j = 0;
+        new_key[i] = key[j];
+    }
+
+    new_key[i] = '\0';
+
+    for (i = 0; i < strlen(input); i++) {
+        if ((buf[i] >= 'a' && buf[i] <= 'z') || (buf[i] >= 'A' && buf[i] <= 'Z')) {
+            if (buf[i] >= 'A' && buf[i] <= 'Z')
+                result[i] = ((buf[i] - 'A' + new_key[i] - 'A') % 26) + 'A';
+            else if (buf[i] >= 'a' && buf[i] <= 'z')
+                result[i] = ((buf[i] - 'a' + new_key[i] - 'A') % 26) + 'a';
+        }
+        else if (buf[i] == 46) {
+            for (k = i; k < strlen(buf); k++) {
+                buf[i] = buf[k];
+                result[k] = buf[i];
+            }
+            break;
+        }
+        else result[i] = buf[i];
+    }
+
+    if (k < i) result[i] = 0;
+    strcpy(output, result);
+}
+
+void vigenere_decrypt(char *input, char *output) {
+    char key[] = "SISOP";
+	char buf[100], new_key[strlen(input)], result[strlen(input)];
+    int i, j, k = 0;
+    strcpy(buf, input);
+
+    for (i=0, j=0; i < strlen(input); ++i, ++j) {
+        if (buf[i] == 32) {
+        	j--;
+			continue;
+		}
+        if (j == (strlen(key))) j = 0;
+        new_key[i] = key[j];
+    }
+
+    new_key[i] = '\0';
+
+    for (i = 0; i < strlen(input); i++) {
+        if ((buf[i] >= 'a' && buf[i] <= 'z') || (buf[i] >= 'A' && buf[i] <= 'Z')) {
+            if (buf[i] >= 'A' && buf[i] <= 'Z')
+                result[i] = ((buf[i] - new_key[i] + 26) % 26) + 'A';
+            else if (buf[i] >= 'a' && buf[i] <= 'z')
+                result[i] = ((buf[i] - new_key[i] - 6) % 26) + 'a';
+        }
+        else if (buf[i] == 46) {
+            for (k = i; k < strlen(buf); k++) {
+                buf[i] = buf[k];
+                result[k] = buf[i];
+            }
+            break;
+        }
+        else result[i] = buf[i];
+    }
+
+    if (k < i) result[i] = 0;
+    strcpy(output, result);
+}
+```
+### Poin (c)
+Apabila direktori yang terencode di-rename (Dihilangkan “RX_” nya), maka folder menjadi tidak terencode dan isi direktori tersebut akan terdecode berdasar nama aslinya.
+- Pada blok kode di bawah, program akan menentukan apakah nama direktori diawali dengan 'RX_'. Jika ya, maka nama isi direktori akan di-encode dengan Atbash dan ROT13, dan jika tidak, maka ditampilkan sesuai nama pada direktori mount, tanpa encoding apapun.
+```c
+static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+                       off_t offset, struct fuse_file_info *fi)
+{
+    int res;
+    DIR *dp;
+    struct dirent *dPtr;
+
+    (void)offset;
+    (void)fi;
+    char fpath[2000], name[2000], cekrename[128];
+    sprintf(fpath, "%s%s", dirpath, path);
+
+    ...
+
+    dp = opendir(fpath);
+    if (!dp) return -errno;
+
+    while ((dPtr = readdir(dp)) ) {
+        struct stat st;
+        memset(&st, 0, sizeof(st));
+        st.st_ino = dPtr->d_ino;
+        st.st_mode = dPtr->d_type << 12;
+
+        char fileName[2000];
+        strcpy(fileName, dPtr->d_name);
+
+        ...
+        else if (strstr(path, "/RX_") && strcmp(".", fileName) && strcmp("..", fileName)) {
+            printf("13 read file path RX: %s\n", path);
+            if (in(renamed_count, cekrename)) {
+                if (!strstr(fileName, ".")) {
+                    char old_name[100], encrypted[100];
+                    bzero(old_name, sizeof(old_name));
+                    strcpy(old_name, fileName);
+                    atbash(old_name);
+                    
+                    bzero(encrypted, sizeof(encrypted));
+                    vigenere_encrypt(old_name, encrypted);
+                    bzero(fileName, sizeof(fileName));
+                    strcpy(fileName, encrypted);
+                    printf("13.1 file name RX: %s\n", fileName);
+                }
+                else {
+                    char ext[1024], arr[100][1024], new_name[1024];
+                    strcpy(ext, strstr(fileName, "."));
+                    char *get_dot = strtok(fileName, ".");
+                    int n = 0;
+                    while (get_dot ) {
+                        strcpy(arr[n++], get_dot);
+                        get_dot = strtok(NULL, ".");
+                    }
+                    strcpy(new_name, arr[n - 2]);
+                    atbash(new_name);
+
+                    char encrypted[100];
+                    bzero(encrypted, sizeof(encrypted));
+                    vigenere_encrypt(new_name, encrypted);
+                    bzero(fileName, sizeof(fileName));
+                    sprintf(fileName, "%s.%s", encrypted, arr[n - 1]);
+                    printf("13.2 file name RX: %s\n", fileName);
+                }
+            }
+            else {
+                printf("14 file name: %s\n", fileName);
+                if (!strstr(fileName, ".")) {
+                    atbash(fileName);
+                    rot13(fileName);
+                    printf("14.1 file name: %s\n", fileName);
+                }
+                else {
+                    char ext[1024], arr[100][1024], new_name[1024];
+                    strcpy(ext, strstr(fileName, "."));
+                    char *get_dot = strtok(fileName, ".");
+                    int n = 0;
+                    while (get_dot ) {
+                        strcpy(arr[n++], get_dot);
+                        get_dot = strtok(NULL, ".");
+                    }
+                    strcpy(new_name, arr[n - 2]);
+                    atbash(new_name);
+                    rot13(new_name);
+
+                    bzero(fileName, sizeof(fileName));
+                    sprintf(fileName, "%s.%s", new_name, arr[n - 1]);
+                    printf("14.2 file name: %s\n", fileName);
+                }
+            }
+        }
+        res = (filler(buf, fileName, &st, 0));
+        if (res) break;
+    }
+    write_info("CD", path);
+    closedir(dp);
+    return 0;
+}
+
+```
+### Poin (d)
+Setiap pembuatan direktori terencode (mkdir atau rename) akan tercatat ke sebuah log file beserta methodnya (apakah itu mkdir atau rename).
+- Ketika mkdir atau rename berhasil dijalankan, dengan syarat perubahan nama dilakukan dari folder yang tidak terenkripsi menjadi folder terenkripsi (nama diawali 'RX_' dan tidak berlaku sebaliknya, karena yang diminta adalah pembuatan folder terenkripsi), append akan dilakukan pada file fuse.log yang telah dibuat (pada poin 1d).
+```c
+static int xmp_mkdir(const char *path, mode_t mode) {
+    ...
+
+    int res = mkdir(fpath, mode);
+    if (res == -1) return -errno;
+    else {
+        if(strstr(path, "AtoZ_")) {
+            FILE *log = fopen("/home/farhan/fuse.log", "a");
+            fprintf(log, "MKDIR: %s%s\n", dirpath, path);
+            fclose(log);
+        }
+        ...
+    }
+
+    return 0;
+}
+
+...
+
+static int xmp_rename(const char *from, const char *to, unsigned int flags){
+    ...
+
+    int res = rename(source, dest);
+    if (res == -1) return -errno;
+    else{
+        ...
+        if(strstr(to, "AtoZ_") || strstr(to, "RX_")) {
+            FILE *log = fopen("/home/farhan/fuse.log", "a");
+            fprintf(log, "RENAME: %s -> %s\n", source, dest);
+            fclose(log);
+        }
+    }
+    return 0;
+}
+
+```
+### Poin (e)
+Pada metode enkripsi ini, file-file pada direktori asli akan menjadi terpecah menjadi file-file kecil sebesar 1024 bytes, sementara jika diakses melalui filesystem rancangan Sin dan Sei akan menjadi normal. Sebagai contoh, Suatu_File.txt berukuran 3 kiloBytes pada directory asli akan menjadi 3 file kecil yakni:
+`Suatu_File.txt.0000`
+
+`Suatu_File.txt.0001`
+
+`Suatu_File.txt.0002`
+
+Ketika diakses melalui filesystem hanya akan muncul `Suatu_File.txt`.
+```
+Belum dikerjakan
 ```
 
 ## Soal 3
@@ -263,9 +748,9 @@ void get_new_directory(char *input, char *output) {
 - Jika sebuah direktori di-rename dengan memberi awalan “A_is_a_”, maka direktori tersebut akan menjadi sebuah direktori spesial.
 - Apabila direktori yang terenkripsi di-rename dengan menghapus “A_is_a_” pada bagian awal nama folder maka direktori tersebut menjadi direktori normal.
 - Direktori spesial adalah direktori yang mengembalikan enkripsi/encoding pada direktori “AtoZ_” maupun “RX_” namun masing-masing aturan mereka tetap berjalan pada direktori di dalamnya (sifat recursive  “AtoZ_” dan “RX_” tetap berjalan pada subdirektori).
-- Pada direktori spesial semua nama file (tidak termasuk ekstensi) pada fuse akan berubah menjadi lowercase insensitive dan diberi ekstensi baru berupa nilai desimal dari binner perbedaan namanya.
+- Pada direktori spesial semua nama file (tidak termasuk ekstensi) pada fuse akan berubah menjadi lowercase insensitive dan diberi ekstensi baru berupa nilai desimal dari biner perbedaan namanya.
 ```
-
+Belum dikerjakan
 ```
 
 ## Soal 4
