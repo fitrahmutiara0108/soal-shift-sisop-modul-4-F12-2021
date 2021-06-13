@@ -745,7 +745,7 @@ static int xmp_mkdir(const char *path, mode_t mode) {
     int res = mkdir(fpath, mode);
     if (res == -1) return -errno;
     else {
-        if(strstr(path, "AtoZ_")) {
+        if(strstr(path, "AtoZ_") || strstr(path, "RX_") ) {
             FILE *log = fopen("/home/farhan/fuse.log", "a");
             fprintf(log, "MKDIR: %s%s\n", dirpath, path);
             fclose(log);
