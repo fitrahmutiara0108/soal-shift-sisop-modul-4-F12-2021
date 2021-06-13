@@ -49,11 +49,43 @@ Untuk memudahkan dalam memonitor kegiatan pada filesystem mereka Sin dan Sei mem
 `INFO::28052021-10:00:00:CREATE::/test.txt`
 `INFO::28052021-10:01:00:RENAME::/test.txt::/rename.txt`
 
-```
+```c
+void write_info(char *text, char* path){
+    char* level = "INFO";
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    char log[2000];
+    sprintf(log, "%s::%02d%02d%04d-%02d:%02d:%02d:%s::%s", level, tm.tm_mday, tm.tm_mon+1, tm.tm_year+1900, tm.tm_hour, tm.tm_min, tm.tm_sec, text, path);
+	FILE *out = fopen("/home/farhan/SinSeiFS.log", "a");  
+    fprintf(out, "%s\n", log);  
+    fclose(out); 
+}
 
+void write_warning(char *text, char* path){ //rmdir dan unlink
+    char* level = "WARNING";
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    char log[2000];
+    sprintf(log, "%s::%02d%02d%04d-%02d:%02d:%02d:%s::%s", level, tm.tm_mday, tm.tm_mon+1, tm.tm_year+1900, tm.tm_hour, tm.tm_min, tm.tm_sec, text, path);
+	FILE *out = fopen("/home/farhan/SinSeiFS.log", "a");  
+    fprintf(out, "%s\n", log);  
+    fclose(out); 
+}
 ```
-- year + 1900 dan month + 1 untuk menghasilkan tahun dan bulan yang sesuai dengan sekarang 
-- sprinf akan melakukan concating string sesuai dengan format log yang sudah ditentukan
-- selanjutnya dengan bantuan fopen akan melakukan appending untuk lognya secara berkala dari string yang sudah disusun tadi.
+- `year + 1900` dan `month + 1` untuk menghasilkan tahun dan bulan yang sesuai dengan sekarang 
+- `sprintf()` akan mencetak string pada variabel `log` sesuai dengan format log yang sudah ditentukan
+- Selanjutnya dengan bantuan `fopen()` akan melakukan appending untuk lognya secara berkala dari string `log` yang sudah disusun tadi.
+- Untuk command RENAME, sebelum log dicatat, path nama awal dan akhir terlebih dahulu dimasukkan dalam string dengan format sesuai contoh, lalu string tersebut akan dicetak ke dalam log melalui fungsi `write_info()`
+```c
+static int xmp_rename(const char *from, const char *to, unsigned int flags){
+    ...
+    int res = rename(source, dest);
+    if (res == -1) return -errno;
+    else{
+        char write[2048];
+        sprintf(write, "%s::%s", from, to);
+        write_info("RENAME", write);
+        ...
+```
 
 ### Kendala dan Error selama pengerjaan
