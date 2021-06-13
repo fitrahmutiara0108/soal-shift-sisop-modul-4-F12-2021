@@ -434,7 +434,10 @@ static int xmp_rename(const char *from, const char *to, unsigned int flags){
 
 
 ### Poin (e)
-- Proses encode-decode ini sudah dilakukan dengan metode recursive sampai ke subfolder didalam direktori nya
+- Proses encode-decode ini sudah dilakukan dengan metode recursive sampai ke subfolder di dalam direktorinya.
+#### Dokumentasi
+![image](https://user-images.githubusercontent.com/70105993/121810159-459ada80-cc92-11eb-8d69-15db6aa21d08.png)
+
 
 ### Kendala dan error selama pengerjaan
 - Sebelum revisi, operasi pengubahan (rename, mkdir, delete, dll.) melalui FUSE menyebabkan FUSE crash
