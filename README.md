@@ -321,3 +321,5 @@ static int xmp_rename(const char *from, const char *to, unsigned int flags){
 ```
 
 ### Kendala dan Error selama pengerjaan
+![Screenshot (1167)](https://user-images.githubusercontent.com/81247727/121806769-6c014b80-cc7b-11eb-8bfd-3cb4e1e57c45.png)
+- Terdapat warning message yang muncul
