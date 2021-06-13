@@ -393,6 +393,9 @@ void rot13(char *str) {
     }
 }
 ```
+#### Dokumentasi
+![image](https://user-images.githubusercontent.com/70105993/121809043-da4f0980-cc8d-11eb-8724-47ec7ccd1ec0.png)
+
 
 ### Poin (b) **(masih belum berfungsi)**
 Jika sebuah direktori di-rename dengan awalan “RX_[Nama]”, maka direktori tersebut akan menjadi direktori terencode beserta isinya dengan perubahan nama isi sesuai dengan kasus nomor 1 dengan algoritma tambahan Vigenere Cipher dengan key “SISOP” (Case-sensitive, Atbash + Vigenere).
@@ -592,6 +595,9 @@ void vigenere_decrypt(char *input, char *output) {
     strcpy(output, result);
 }
 ```
+#### Dokumentasi
+![image](https://user-images.githubusercontent.com/70105993/121808900-3b2a1200-cc8d-11eb-9e67-182754aa7c5c.png)
+
 ### Poin (c)
 Apabila direktori yang terencode di-rename (Dihilangkan “RX_” nya), maka folder menjadi tidak terencode dan isi direktori tersebut akan terdecode berdasar nama aslinya.
 - Pada blok kode di bawah, program akan menentukan apakah nama direktori diawali dengan 'RX_'. Jika ya, maka nama isi direktori akan di-encode dengan Atbash dan ROT13, dan jika tidak, maka ditampilkan sesuai nama pada direktori mount, tanpa encoding apapun.
@@ -691,8 +697,10 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     closedir(dp);
     return 0;
 }
-
 ```
+#### Dokumentasi
+![image](https://user-images.githubusercontent.com/70105993/121809188-6a8d4e80-cc8e-11eb-8fff-3c1c92021c2a.png)
+
 ### Poin (d)
 Setiap pembuatan direktori terencode (mkdir atau rename) akan tercatat ke sebuah log file beserta methodnya (apakah itu mkdir atau rename).
 - Ketika mkdir atau rename berhasil dijalankan, dengan syarat perubahan nama dilakukan dari folder yang tidak terenkripsi menjadi folder terenkripsi (nama diawali 'RX_' dan tidak berlaku sebaliknya, karena yang diminta adalah pembuatan folder terenkripsi), append akan dilakukan pada file fuse.log yang telah dibuat (pada poin 1d).
@@ -733,6 +741,9 @@ static int xmp_rename(const char *from, const char *to, unsigned int flags){
 }
 
 ```
+#### Dokumentasi
+![image](https://user-images.githubusercontent.com/70105993/121809379-22226080-cc8f-11eb-8afe-d8808e6291db.png)
+
 ### Poin (e)
 Pada metode enkripsi ini, file-file pada direktori asli akan menjadi terpecah menjadi file-file kecil sebesar 1024 bytes, sementara jika diakses melalui filesystem rancangan Sin dan Sei akan menjadi normal. Sebagai contoh, Suatu_File.txt berukuran 3 kiloBytes pada directory asli akan menjadi 3 file kecil yakni:
 `Suatu_File.txt.0000`
@@ -747,8 +758,14 @@ Belum dikerjakan
 ```
 
 ### Kendala dan error selama pengerjaan
-- Rename folder dengan awalan 'RX_' melalui FUSE menyebabkan FUSE crash, sedangkan jika FUSE di-restart, folder dengan awalan nama 'RX_' tetap terenkripsi
+- Rename folder dengan awalan 'RX_' melalui FUSE kemudian membuka folder yang direname tersebut menyebabkan FUSE crash, sedangkan jika FUSE di-restart, isi folder dengan awalan nama 'RX_' tetap terenkripsi dan bisa dibuka
+
+![image](https://user-images.githubusercontent.com/70105993/121809189-6cefa880-cc8e-11eb-9405-da9ce4bfcbb2.png)
+
 - Enkripsi menghasilkan karakter non-alfabetik
+
+![image](https://user-images.githubusercontent.com/70105993/121808915-4f6e0f00-cc8d-11eb-98ca-82c18659d8a2.png)
+
 
 ## Soal 3
 - Jika sebuah direktori dibuat dengan awalan “A_is_a_”, maka direktori tersebut akan menjadi sebuah direktori spesial.
@@ -811,8 +828,8 @@ static int xmp_rename(const char *from, const char *to, unsigned int flags){
         write_info("RENAME", write);
         ...
 ```
-### Contoh Output
-![Screenshot (1184)](https://user-images.githubusercontent.com/81247727/121809007-4416e580-cc85-11eb-92ef-111d91e09ce5.png)
+### Dokumentasi
+![image](https://user-images.githubusercontent.com/70105993/121808510-6f9cce80-cc8b-11eb-98d5-49339e4549be.png)
 
 ### Kendala dan Error selama pengerjaan
 ![Screenshot (1167)](https://user-images.githubusercontent.com/81247727/121806769-6c014b80-cc7b-11eb-8bfd-3cb4e1e57c45.png)
