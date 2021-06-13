@@ -245,6 +245,82 @@ void get_new_directory(char *input, char *output) {
     }
 }
 ```
+- Fungsi `xmp_getattr()` wajib terlebih dahulu dibuat untuk bisa mendapatkan atribut dari direktori yang diakses.
+```c
+static int xmp_getattr(const char *path, struct stat *stbuf) {
+    char fpath[2000];
+    char temp[1024];
+    strcpy(temp, path);
+    sprintf(fpath, "%s%s", dirpath, path);
+    if (access(fpath, F_OK) == -1) {
+        bzero(fpath, sizeof(fpath));
+        get_original_directory(temp, fpath);
+    }
+
+    int res = lstat(fpath, stbuf);
+    if (res == -1) return -errno;
+	else write_info("LS", path);
+    return 0;
+}
+```
+- Fungsi `xmp_readdir()` akan mengecek apakah direktori berawalan "AtoZ_". Jika direktori adalah folder maka namanya akan di-encode seluruhnya, sedangkan jika direktori adalah file maka akan diambil terlebih dahulu nama file sebelum '.' terakhir (menandakan selanjutnya adalah ekstensi) untuk kemudian di-encode.
+```c
+static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+                       off_t offset, struct fuse_file_info *fi)
+{
+    int res;
+    DIR *dp;
+    struct dirent *dPtr;
+
+    (void)offset;
+    (void)fi;
+    char fpath[2000], name[2000], cekrename[128];
+    sprintf(fpath, "%s%s", dirpath, path);
+
+    ...
+
+    dp = opendir(fpath);
+    if (!dp) return -errno;
+
+    while ((dPtr = readdir(dp)) ) {
+        struct stat st;
+        memset(&st, 0, sizeof(st));
+        st.st_ino = dPtr->d_ino;
+        st.st_mode = dPtr->d_type << 12;
+
+        char fileName[2000];
+        strcpy(fileName, dPtr->d_name);
+
+        if (strstr(path, "/AtoZ_")  && strcmp(".", fileName)  && strcmp("..", fileName) ) {
+            printf("12 read file path AtoZ: %s\n", path);
+            if (!strstr(fileName, "."))  atbash(fileName);
+            else {
+                char ext[1024], arr[100][1024], new_name[1024];
+                strcpy(ext, strstr(fileName, "."));
+                char *get_dot = strtok(fileName, ".");
+                int n = 0;
+                while (get_dot ) {
+                    strcpy(arr[n++], get_dot);
+                    get_dot = strtok(NULL, ".");
+                }
+                strcpy(new_name, arr[n - 2]);
+                atbash(new_name);
+                bzero(fileName, sizeof(fileName));
+                sprintf(fileName, "%s.%s", new_name, arr[n - 1]);
+                printf("12.1 file name AtoZ: %s\n", fileName);
+            }
+        }
+        ...
+        }
+        res = (filler(buf, fileName, &st, 0));
+        if (res) break;
+    }
+    write_info("CD", path);
+    closedir(dp);
+    return 0;
+}
+
+```
 
 #### Dokumentasi
 ![image](https://user-images.githubusercontent.com/70105993/121810856-f86c3800-cc94-11eb-803c-7798090e95be.png)
@@ -310,7 +386,7 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     return 0;
 }
 ```
-Pada fungsi `xmp_readdir()`, akan dicek apakah proses yang dilakukan adalah *create* atau *rename*. Lalu string yang bakal di-encode hanyalah nama file pada subfoldernya saja, tidak sampai ke ekstensi nya.
+Pada fungsi `xmp_readdir()`, akan dicek apakah proses yang dilakukan adalah *create* atau *rename*. Lalu string yang bakal di-encode hanyalah nama folder dan nama file pada subfoldernya saja, tidak sampai ke ekstensi nya.
 
 #### Dokumentasi
 ![image](https://user-images.githubusercontent.com/70105993/121810991-729cbc80-cc95-11eb-9412-1705a73d432e.png)
