@@ -9,8 +9,7 @@
 - Jika sebuah direktori di-rename dengan awalan “AtoZ_”, maka direktori tersebut akan menjadi direktori ter-encode.
 - Apabila direktori yang terenkripsi di-rename menjadi tidak ter-encode, maka isi direktori tersebut akan terdecode.
 - Setiap pembuatan direktori ter-encode (mkdir atau rename) akan tercatat ke sebuah log. Format : /home/[USER]/Downloads/[Nama Direktori] → /home/[USER]/Downloads/AtoZ_[Nama Direktori]
-- Nama isi direktori berawalan "AtoZ_" di-encode menggunakan Atbash Cipher, yaitu sistem pengkodean mencerminkan alfabet sesuai urutan (A menjadi Z, B menjadi Y, C menjadi X, dan seterusnya, berlaku sebaliknya).
-```
+- Nama isi direktori berawalan "AtoZ_" di-encode menggunakan Atbash Cipher, yaitu sistem pengkodean mencerminkan alfabet sesuai urutan (A menjadi Z, B menjadi Y, C menjadi X, dan seterusnya, berlaku sebaliknya.
 ### Poin (a)
 - Untuk men-encode seluruh folder dan subfolder beserta file yang berada didalam folder "AtoZ_[Nama]" dengan algoritma atbash cipher, maka akan dibuat fungsi `atbash()`. Referensi tentang atbash cipher dapat dibaca disini `https://www.dcode.fr/atbash-cipher`
 ```c
