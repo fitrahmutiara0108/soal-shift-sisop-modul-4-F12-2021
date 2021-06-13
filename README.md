@@ -19,6 +19,7 @@ void atbash(char *str) {
 }
 ```
 - Lalu, saat melakukan encoding, akan terjadi perbedaan nama folder dan file antara mount dan FUSE sehingga file menjadi tidak terdeteksi. Maka akan dibuat fungsi `get_original_directory()` dan `get_new_directory()` untuk menjaga agar direktori pada FUSE tetap sama dengan direktori mount-nya.
+- Fungsi `get_original_directory()` akan mengecek apakah awal direktori memiliki awalan kata `AtoZ_` atau `RX_` dan mendapatkan direktori asli pada direktori mount dari direktori yang sedang diakses. Jika awalannya *AtoZ_* maka akan dilakukan dekripsi dengan metode *Atbash Cipher*, jika awalannya *RX_* akan menggunakan *Atbash Ciper* ditambah metode *ROT13* yang akan digunakan untuk soal nomor 2.
 ```c
 void get_original_directory(char *input, char *output) {
     char fpath[1024];
@@ -244,7 +245,6 @@ void get_new_directory(char *input, char *output) {
     }
 }
 ```
-Fungsi `get_original_directory()` akan mengecek apakah awal direktori memiliki awalan kata `AtoZ_` atau `RX_` dan mendapatkan direktori asli pada direktori mount dari direktori yang sedang diakses. Jika awalannya *AtoZ_* maka akan dilakukan dekripsi dengan metode *Atbash Cipher*, jika awalannya *RX_* akan menggunakan *Atbash Ciper* ditambah metode *ROT13* yang akan digunakan untuk soal nomor 2.
 
 #### Dokumentasi
 ![image](https://user-images.githubusercontent.com/70105993/121810856-f86c3800-cc94-11eb-803c-7798090e95be.png)
