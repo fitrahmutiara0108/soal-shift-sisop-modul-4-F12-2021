@@ -300,6 +300,9 @@ static int xmp_rename(const char *from, const char *to, unsigned int flags){
 }
 
 ```
+### Kendala dan error selama pengerjaan
+- Sebelum revisi, operasi pengubahan (rename, mkdir, delete, dll.) melalui FUSE menyebabkan FUSE crash
+- Enkripsi tidak berjalan
 
 ## Soal 2
 ### Poin (a)
@@ -742,6 +745,10 @@ Ketika diakses melalui filesystem hanya akan muncul `Suatu_File.txt`.
 ```
 Belum dikerjakan
 ```
+
+### Kendala dan error selama pengerjaan
+- Rename folder dengan awalan 'RX_' melalui FUSE menyebabkan FUSE crash, sedangkan jika FUSE di-restart, folder dengan awalan nama 'RX_' tetap terenkripsi
+- Enkripsi menghasilkan karakter non-alfabetik
 
 ## Soal 3
 - Jika sebuah direktori dibuat dengan awalan “A_is_a_”, maka direktori tersebut akan menjadi sebuah direktori spesial.
