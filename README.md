@@ -520,7 +520,7 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 void rot13(char *str) {
     for (int i = 0; i < strlen(str); i++) { 
         if (str[i] >= 'A' && str[i] <= 'Z') {
-        	if(str[i]-'A'+1 <= 13) str[i] += 13;
+            if(str[i]-'A'+1 <= 13) str[i] += 13;
             else str[i] -= 13;
         }
         else if (str[i] >= 'a' && str[i] <= 'z') {
