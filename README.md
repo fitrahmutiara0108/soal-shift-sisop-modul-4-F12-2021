@@ -1052,7 +1052,8 @@ static int xmp_rename(const char *from, const char *to, unsigned int flags){
         ...
 ```
 ### Dokumentasi
-![image](https://user-images.githubusercontent.com/70105993/121808510-6f9cce80-cc8b-11eb-98d5-49339e4549be.png)
+![image](https://user-images.githubusercontent.com/70105993/121812144-60248200-cc99-11eb-80bb-441635fc7044.png)
+
 
 ### Kendala dan Error selama pengerjaan
 ![Screenshot (1167)](https://user-images.githubusercontent.com/81247727/121806769-6c014b80-cc7b-11eb-8bfd-3cb4e1e57c45.png)
