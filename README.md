@@ -246,6 +246,10 @@ void get_new_directory(char *input, char *output) {
 ```
 Fungsi `get_original_directory()` akan mengecek apakah awal direktori memiliki awalan kata `AtoZ_` atau `RX_` dan mendapatkan direktori asli pada direktori mount dari direktori yang sedang diakses. Jika awalannya *AtoZ_* maka akan dilakukan dekripsi dengan metode *Atbash Cipher*, jika awalannya *RX_* akan menggunakan *Atbash Ciper* ditambah metode *ROT13* yang akan digunakan untuk soal nomor 2.
 
+#### Dokumentasi
+![image](https://user-images.githubusercontent.com/70105993/121810856-f86c3800-cc94-11eb-803c-7798090e95be.png)
+
+
 ### Poin (b)
 Jika sebuah direktori di-rename dengan awalan “AtoZ_”, maka direktori tersebut akan menjadi direktori ter-encode.
 - Poin ini sama saja dengan poin (a), hanya saja direktori yang akan di-encode bukan hasil dari create, melainkan hasil dari rename.
@@ -307,6 +311,10 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 }
 ```
 Pada fungsi `xmp_readdir()`, akan dicek apakah proses yang dilakukan adalah *create* atau *rename*. Lalu string yang bakal di-encode hanyalah nama file pada subfoldernya saja, tidak sampai ke ekstensi nya.
+
+#### Dokumentasi
+![image](https://user-images.githubusercontent.com/70105993/121810991-729cbc80-cc95-11eb-9412-1705a73d432e.png)
+
 
 ### Poin (c)
 Apabila direktori yang terenkripsi di-rename menjadi tidak ter-encode, maka isi direktori tersebut akan terdecode.
