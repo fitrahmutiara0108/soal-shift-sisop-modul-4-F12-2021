@@ -9,8 +9,240 @@
 - Jika sebuah direktori di-rename dengan awalan “AtoZ_”, maka direktori tersebut akan menjadi direktori ter-encode.
 - Apabila direktori yang terenkripsi di-rename menjadi tidak ter-encode, maka isi direktori tersebut akan terdecode.
 - Setiap pembuatan direktori ter-encode (mkdir atau rename) akan tercatat ke sebuah log. Format : /home/[USER]/Downloads/[Nama Direktori] → /home/[USER]/Downloads/AtoZ_[Nama Direktori]
+- Nama isi direktori berawalan "AtoZ_" di-encode menggunakan Atbash Cipher, yaitu sistem pengkodean mencerminkan alfabet sesuai urutan (A menjadi Z, B menjadi Y, C menjadi X, dan seterusnya, berlaku sebaliknya).
+```c
+void atbash(char *str) {
+    for (int i = 0; i < strlen(str); i++) {
+        if(str[i] >= 'A' && str[i] <= 'Z') str[i] = 'Z' + 'A' - str[i];
+		else if(str[i] >= 'a' && str[i] <= 'z') str[i] = 'z' + 'a' - str[i];
+        else if (str[i] == 46) break;
+        else continue;
+    }
+}
 ```
+```c
+void get_original_directory(char *input, char *output) {
+    char fpath[1024];
+    bzero(fpath, sizeof(fpath));
+    sprintf(fpath, "%s%s", dirpath, input);
+    if (strstr(fpath, "/AtoZ_")) {
+        char mid_path[1024];
 
+        strcpy(fpath, input);
+        bzero(fpath, sizeof(fpath));
+
+        strcpy(fpath, input);
+        char *path = strstr(fpath, "/AtoZ_");
+        printf("1 file path AtoZ: %s\n", path);
+        char *enc = strtok(path, "/");
+
+        if ((enc = strtok(NULL, "/"))) {
+            char name[1024];
+            bzero(fpath, sizeof(fpath));
+            strcpy(fpath, input);
+            strcpy(name, strstr(fpath, enc));
+            atbash(name);
+
+            bzero(mid_path, sizeof(mid_path));
+            strncpy(mid_path, fpath, strlen(fpath) - strlen(name));
+            bzero(fpath, sizeof(fpath));
+
+            sprintf(output, "%s%s%s", dirpath, mid_path, name);
+            printf("1.1 output path AtoZ: %s\n", output);
+        }
+    }
+    else if (strstr(fpath, "/RX_") ) {
+        char back_path[1024];
+
+        bzero(fpath, sizeof(fpath));
+        strcpy(fpath, input);
+        bzero(fpath, sizeof(fpath));
+        strcpy(fpath, input);
+
+        char *path = strstr(fpath, "/RX_");
+        printf("2 file path RX: %s\n", path);
+        char *enc = strtok(path, "/");
+
+        if ((enc = strtok(NULL, "/")) ) {
+            char buffer[1024];
+            bzero(fpath, sizeof(fpath));
+            strcpy(fpath, input);
+            strcpy(buffer, strstr(fpath, enc));
+
+            bzero(back_path, sizeof(back_path));
+            strncpy(back_path, fpath, strlen(fpath) - strlen(buffer) - 1);
+
+            bzero(fpath, sizeof(fpath));
+            sprintf(fpath, "%s%s", dirpath, back_path);
+            printf("2.1 fpath RX: %s\n", fpath);
+        }
+
+        if (in(renamed_count, fpath)) {
+            char mid_path[1024];
+
+            bzero(fpath, sizeof(fpath));
+            strcpy(fpath, input);
+            bzero(fpath, sizeof(fpath));
+            strcpy(fpath, input);
+
+            char *rec_path = strstr(fpath, "/RX_");
+            printf("3 file path RX: %s\n", rec_path);
+            char *rec_enc = strtok(rec_path, "/");
+
+            if ((rec_enc = strtok(NULL, "/")) ) {
+                char name[1024], decrypted[100];
+                strcpy(name, rec_enc);
+
+                bzero(decrypted, sizeof(decrypted));
+                vigenere_decrypt(name, decrypted);
+                atbash(decrypted);
+                
+
+                bzero(mid_path, sizeof(mid_path));
+                strncpy(mid_path, fpath, strlen(fpath) - strlen(name));
+                bzero(fpath, sizeof(fpath));
+
+                sprintf(output, "%s%s/%s", dirpath, mid_path, decrypted);
+                printf("3.1 output path RX: %s\n", output);
+            }
+        }
+        else {
+            char mid_path[1024];
+
+            strcpy(fpath, input);
+            bzero(fpath, sizeof(fpath));
+            strcpy(fpath, input);
+            
+            char *rec_path = strstr(fpath, "/RX_");
+            printf("4 file path RX: %s\n", rec_path);
+            char *rec_enc = strtok(rec_path, "/");
+            printf("4.x file path RX: %s\n", rec_enc);
+
+            if ((rec_enc = strtok(NULL, "/")) ) {
+                char name[1024];
+
+                bzero(fpath, sizeof(fpath));
+                strcpy(fpath, input);
+                strcpy(name, strstr(fpath, rec_enc));
+                atbash(name);
+                rot13(name);
+                
+                bzero(mid_path, sizeof(mid_path));
+                strncpy(mid_path, fpath, strlen(fpath) - strlen(name));
+                bzero(fpath, sizeof(fpath));
+
+                sprintf(output, "%s%s%s", dirpath, mid_path, name);
+                printf("4.1 output path RX: %s\n", output);
+            }
+        }
+    }
+    else sprintf(output, "%s%s", dirpath, input);
+    printf("A1 output path: %s\n", output);
+}
+
+void get_new_directory(char *input, char *output) {
+    char fpath[1024];
+    bzero(fpath, sizeof(fpath));
+    sprintf(fpath, "%s%s", dirpath, input);
+    if (strstr(fpath, "/AtoZ_") ) {
+        char mid_path[1024];
+
+        strcpy(fpath, input);
+        bzero(fpath, sizeof(fpath));
+        strcpy(fpath, input);
+
+        char *path = strstr(fpath, "/AtoZ_");
+        printf("5 file path AtoZ: %s\n", path);
+        char *enc = strtok(path, "/");
+
+        if ((enc = strtok(NULL, "/")) ) {
+            char name[1024];
+            bzero(fpath, sizeof(fpath));
+            strcpy(fpath, input);
+            strcpy(name, strstr(fpath, enc));
+
+            bzero(mid_path, sizeof(mid_path));
+            strncpy(mid_path, fpath, strlen(fpath) - strlen(name));
+            bzero(output, sizeof(output));
+
+            sprintf(output, "%s%s%s", dirpath, mid_path, name);
+            printf("5.1 output path AtoZ: %s\n", output);
+        }
+
+        else {
+            bzero(output, sizeof(output));
+            sprintf(output, "%s%s", dirpath, input);
+            printf("5.2 output path AtoZ: %s\n", output);
+        }
+    }
+    else if (strstr(fpath, "RX_") ) {
+        if (in(renamed_count, fpath)) {
+            char mid_path[1024];
+
+            strcpy(fpath, input);
+            bzero(fpath, sizeof(fpath));
+            strcpy(fpath, input);
+
+            char *path = strstr(fpath, "/RX_");
+            printf("6 file path RX: %s\n", path);
+            char *enc = strtok(path, "/");
+
+            if ((enc = strtok(NULL, "/")) ) {
+                char name[1024];
+                bzero(fpath, sizeof(fpath));
+                strcpy(fpath, input);
+                strcpy(name, strstr(fpath, enc));
+
+                bzero(mid_path, sizeof(mid_path));
+                strncpy(mid_path, fpath, strlen(fpath) - strlen(name));
+                bzero(output, sizeof(output));
+
+                sprintf(output, "%s%s%s", dirpath, mid_path, name);
+                printf("6.1 output path RX: %s\n", output);
+            }
+            else {
+                bzero(output, sizeof(output));
+                sprintf(output, "%s%s", dirpath, input);
+                printf("6.2 output path RX: %s\n", output);
+            }
+        }
+        else {
+            char mid_path[1024];
+
+            strcpy(fpath, input);
+            bzero(fpath, sizeof(fpath));
+            strcpy(fpath, input);
+
+            char *str = strstr(fpath, "/RX_");
+            printf("7 file path RX: %s\n", str);
+            char *enc = strtok(str, "/");
+
+            if ((enc = strtok(NULL, "/")) ) {
+                char name[1024];
+                bzero(fpath, sizeof(fpath));
+                strcpy(fpath, input);
+                strcpy(name, strstr(fpath, enc));
+
+                bzero(mid_path, sizeof(mid_path));
+                strncpy(mid_path, fpath, strlen(fpath) - strlen(name));
+                bzero(output, sizeof(output));
+
+                sprintf(output, "%s%s%s", dirpath, mid_path, name);
+                printf("7.1 output path RX: %s\n", output);
+            }
+            else {
+                bzero(output, sizeof(output));
+                sprintf(output, "%s%s", dirpath, input);
+                printf("7.2 output path RX: %s\n", output);
+            }
+        }
+    }
+    else {
+        bzero(output, sizeof(output));
+        sprintf(output, "%s%s", dirpath, input);
+        printf("A2 output path: %s\n", output);
+    }
+}
 ```
 
 ## Soal 2
